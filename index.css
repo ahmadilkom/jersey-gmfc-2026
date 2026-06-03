@@ -931,11 +931,15 @@ td.size-column {
   gap: 10px;
   font-weight: 500;
   transform: translateY(150%);
+  opacity: 0;
+  visibility: hidden;
   transition: var(--transition);
 }
 
 .toast.active {
   transform: translateY(0);
+  opacity: 1;
+  visibility: visible;
 }
 
 .toast-success {
