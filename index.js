@@ -5,8 +5,8 @@
 const SUPABASE_URL = 'https://dmukndauceqlpxwqxztd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ZuDHnYR-xTAWnW7dOJqR5g_MSQCEJ_7';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-console.log('Supabase client initialized', supabase);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+console.log('Supabase client initialized', supabaseClient);
 
 // ---- Debug helper: direct fetch with API key ----
 async function testSupabaseFetch() {
@@ -344,7 +344,7 @@ window.deleteOrder = (id) => {
 const confirmDelete = async () => {
   if (pendingDeleteId === null) return;
   try {
-    const { error } = await supabase.from('orders').delete().eq('id', pendingDeleteId);
+    const { error } = await supabaseClient.from('orders').delete().eq('id', pendingDeleteId);
     if (error) throw error;
 
     const idx = orders.findIndex((o) => o.id === pendingDeleteId);
@@ -481,14 +481,14 @@ const setupEventListeners = () => {
 
       try {
         if (idVal) {
-          const { error } = await supabase.from('orders').update(data).eq('id', parseInt(idVal));
+          const { error } = await supabaseClient.from('orders').update(data).eq('id', parseInt(idVal));
           if (error) throw error;
 
           const idx = orders.findIndex((o) => o.id === parseInt(idVal));
           if (idx !== -1) { orders[idx] = { ...orders[idx], ...data }; }
           showToast('Pesanan berhasil diperbarui!', 'success');
         } else {
-          const { data: insertedData, error } = await supabase.from('orders').insert([data]).select();
+          const { data: insertedData, error } = await supabaseClient.from('orders').insert([data]).select();
           if (error) throw error;
 
           if (insertedData && insertedData.length > 0) {
