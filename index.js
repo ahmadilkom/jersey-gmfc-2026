@@ -410,13 +410,36 @@ const setupEventListeners = () => {
     bgMusic.volume = 0.3;
     const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
     const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    const playMusic = async () => {
+      if (isPlaying) return;
+      try {
+        await bgMusic.play();
+        musicBtn.innerHTML = pauseIcon;
+        isPlaying = true;
+      } catch (e) {
+        console.warn("Autoplay blocked by browser. Waiting for interaction...");
+      }
+    };
 
-    musicBtn.addEventListener('click', () => {
+    // Attempt to play on load
+    playMusic();
+
+    // Listen for any interaction to play if blocked
+    const startMusicInteraction = () => {
+      playMusic();
+      document.removeEventListener('click', startMusicInteraction);
+      document.removeEventListener('keydown', startMusicInteraction);
+    };
+    document.addEventListener('click', startMusicInteraction);
+    document.addEventListener('keydown', startMusicInteraction);
+
+    musicBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent triggering the global listener
       if (isPlaying) {
         bgMusic.pause();
         musicBtn.innerHTML = playIcon;
       } else {
-        bgMusic.play().catch(e => console.error("Audio play failed:", e));
+        bgMusic.play().catch(err => console.error("Audio play failed:", err));
         musicBtn.innerHTML = pauseIcon;
       }
       isPlaying = !isPlaying;
