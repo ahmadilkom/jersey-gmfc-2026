@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistem Informasi Pemesanan & Pembayaran Jersey Global Madani Football Club (GMFC) 2026.">
+  <title>GMFC Jersey 2026 - Order Dashboard</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body data-theme="dark">
+
+  <!-- Header Section -->
+  <header>
+    <div class="header-container">
+      <div class="brand-section">
+        <div class="brand-logo">GM</div>
+        <div class="brand-title">
+          <h1>GMFC JERSEY 2026</h1>
+          <p>Global Madani Football Club • Order Dashboard</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Admin-only: hidden by default, shown when logged in as admin -->
+        <button id="open-modal-btn" class="btn btn-primary admin-only" style="display:none;" title="Tambah data pesanan baru">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          Tambah Pesanan
+        </button>
+        <!-- Admin toggle button -->
+        <button id="admin-login-btn" class="btn btn-admin" title="Masuk sebagai Admin" onclick="openAdminModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Mode Admin
+        </button>
+        <button id="admin-logout-btn" class="btn btn-admin-active" style="display:none;" title="Keluar dari Mode Admin" onclick="adminLogout()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Logout Admin
+        </button>
+        <button id="theme-toggle-btn" class="btn theme-toggle" title="Ubah tema Terang/Gelap">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Admin Login Modal -->
+  <div id="admin-modal-overlay" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <h2 class="modal-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;vertical-align:middle;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Login Admin
+        </h2>
+        <button id="close-admin-modal-btn" class="btn" style="border:none; padding:4px; background:transparent;" onclick="closeAdminModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="container-body" style="padding: 24px 0 8px;">
+        <p style="color: var(--text-muted); font-size:0.875rem; margin-bottom:20px; line-height:1.6;">
+          Masukkan password untuk mengakses fitur tambah, edit, dan hapus data pesanan.
+        </p>
+        <div class="form-group">
+          <label class="form-label" for="admin-password-input">Password Admin</label>
+          <input type="password" id="admin-password-input" class="form-input"
+            placeholder="Masukkan password..." autocomplete="current-password">
+        </div>
+        <p id="admin-error-msg" style="color: var(--primary); font-size:0.8rem; margin-top:8px; display:none;">
+          ❌ Password salah. Coba lagi.
+        </p>
+      </div>
+      <div class="form-actions" style="margin-top:8px;">
+        <button type="button" id="cancel-admin-btn" class="btn" onclick="closeAdminModal()">Batal</button>
+        <button type="button" id="submit-admin-btn" class="btn btn-primary" onclick="handleAdminSubmit()">Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="confirm-delete-overlay" class="modal-overlay" style="z-index: 1000;">
+    <div class="modal-content" style="max-width: 350px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="modal-title">Hapus Pesanan</h3>
+        <button id="close-delete-btn" class="btn" style="border:none; padding:4px; background:transparent;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p style="color: var(--text-muted); margin: 16px 0;">Apakah Anda yakin ingin menghapus pesanan ini? Data yang dihapus tidak dapat dikembalikan.</p>
+      <div class="form-actions">
+        <button id="cancel-delete-btn" class="btn">Batal</button>
+        <button id="confirm-delete-btn" class="btn" style="background: var(--primary); color: white;">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div id="confirm-logout-overlay" class="modal-overlay" style="z-index: 1000;">
+    <div class="modal-content" style="max-width: 350px;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="modal-title">Keluar Mode Admin</h3>
+        <button id="close-logout-btn" class="btn" style="border:none; padding:4px; background:transparent;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <p style="color: var(--text-muted); margin: 16px 0;">Apakah Anda yakin ingin keluar dari mode admin?</p>
+      <div class="form-actions">
+        <button id="cancel-logout-btn" class="btn">Batal</button>
+        <button id="confirm-logout-btn" class="btn" style="background: var(--primary); color: white; border: none;">Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Dashboard -->
+  <main>
+    <!-- Top Statistics Summary Row -->
+    <div class="stats-grid">
+      <!-- Total Orders Card -->
+      <div class="stat-card" style="--card-accent: var(--primary); --card-bg-subtle: var(--primary-subtle);">
+        <div class="stat-header">
+          <span class="stat-title">Total Pemesanan</span>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.62 2V19a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5.44a2 2 0 0 0-1.62-2z"/><path d="M12 2v19"/></svg>
+          </div>
+        </div>
+        <div id="stat-total-orders" class="stat-value">-</div>
+        <div class="stat-desc">Jersey yang dipesan keseluruhan</div>
+      </div>
+
+      <!-- Total Nilai Jersey (Revenue) -->
+      <div class="stat-card" style="--card-accent: var(--info); --card-bg-subtle: var(--info-subtle);">
+        <div class="stat-header">
+          <span class="stat-title">Total Tagihan</span>
+          <div class="stat-icon">
+            <span class="icon-rp">Rp</span>
+          </div>
+        </div>
+        <div id="stat-total-revenue" class="stat-value">-</div>
+        <div class="stat-desc">Total tagihan nominal pesanan</div>
+      </div>
+
+      <!-- Total Terbayar (Uang Masuk) -->
+      <div class="stat-card" style="--card-accent: var(--success); --card-bg-subtle: var(--success-subtle);">
+        <div class="stat-header">
+          <span class="stat-title">Total Uang Masuk</span>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="10" x2="12" y2="10"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M12 14c-1.5 0-3-.5-3-1.5M12 14c1.5 0 3-.5 3-1.5"/></svg>
+          </div>
+        </div>
+        <div id="stat-total-paid" class="stat-value">-</div>
+        <div class="stat-desc">Jumlah dana pembayaran DP & Lunas</div>
+      </div>
+
+      <!-- Persentase Pelunasan -->
+      <div class="stat-card" style="--card-accent: #8b5cf6; --card-bg-subtle: rgba(139, 92, 246, 0.08);">
+        <div class="stat-header">
+          <span class="stat-title">Persentase Pelunasan</span>
+          <div class="stat-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+          </div>
+        </div>
+        <div id="settlement-rate-text" class="stat-value">-</div>
+        <div class="stat-desc">Rasio pesanan dengan status LUNAS</div>
+      </div>
+    </div>
+
+    <!-- Main Section: Grid content -->
+    <div class="dashboard-content">
+      <!-- Left Column: Table & Filters -->
+      <div class="glass-container">
+        <div class="container-header">
+          <div class="container-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/><path d="M12 3v18"/></svg>
+            Daftar Pemesanan Jersey
+            <span id="filtered-count-badge" class="badge badge-category" style="font-size: 0.75rem; margin-left: 10px; display: none;"></span>
+          </div>
+        </div>
+
+        <div class="container-body">
+          <!-- Filters Area -->
+          <div class="filters-wrapper">
+            <!-- Search bar -->
+            <div class="search-bar-row">
+              <div class="search-input-wrapper">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                <input type="text" id="search-input" class="search-input" placeholder="Cari nama punggung, nomor, pemesan, keterangan...">
+              </div>
+            </div>
+
+            <!-- Tabs row -->
+            <div class="filter-controls-row">
+              <!-- Category Tabs -->
+              <div class="tab-group" id="category-tabs">
+                <button class="tab-btn active">Semua Kategori</button>
+                <button class="tab-btn">Anak-Anak</button>
+                <button class="tab-btn">Dewasa / Umum</button>
+              </div>
+
+              <!-- Status Tabs -->
+              <div class="tab-group" id="status-tabs">
+                <button class="tab-btn active">Semua Status</button>
+                <button class="tab-btn">Lunas</button>
+                <button class="tab-btn">Belum Lunas</button>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Data Table -->
+          <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+            <table id="orders-table">
+              <thead style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th>No</th>
+                  <th>Nama Punggung</th>
+                  <th>No.</th>
+                  <th>Ukuran</th>
+                  <th>Kategori</th>
+                  <th>Keterangan Jersey</th>
+                  <th>Pemesan</th>
+                  <th>Tagihan</th>
+                  <th>Status Pembayaran</th>
+                  <th>Tgl Bayar</th>
+                  <th id="actions-header" style="display: none;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+
+  <!-- Add & Edit Order Modal Overlay -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 id="modal-title" class="modal-title">Tambah Pemesanan Jersey</h2>
+        <button id="close-modal-btn" class="btn" style="border: none; padding: 4px; background: transparent;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form id="order-form">
+        <input type="hidden" id="order-id-input">
+        
+        <div class="form-grid">
+          <!-- Kategori -->
+          <div class="form-group">
+            <label class="form-label" for="form-category">Kategori Jersey</label>
+            <select id="form-category" class="form-input" required>
+              <option value="Dewasa / Umum">Dewasa / Umum</option>
+              <option value="Anak-Anak">Anak-Anak</option>
+            </select>
+          </div>
+
+          <!-- Nama Punggung -->
+          <div class="form-group">
+            <label class="form-label" for="form-name">Nama Punggung (Kapital)</label>
+            <input type="text" id="form-name" class="form-input" required>
+          </div>
+
+          <!-- Nomor Punggung -->
+          <div class="form-group">
+            <label class="form-label" for="form-number">Nomor Punggung</label>
+            <input type="text" id="form-number" class="form-input" required>
+          </div>
+
+          <!-- Ukuran -->
+          <div class="form-group">
+            <label class="form-label" for="form-size">Ukuran Jersey</label>
+            <input type="text" id="form-size" class="form-input" required>
+          </div>
+
+          <!-- Pemesan -->
+          <div class="form-group">
+            <label class="form-label" for="form-customer">Nama Pemesan</label>
+            <input type="text" id="form-customer" class="form-input" required>
+          </div>
+
+          <!-- Keterangan Jersey -->
+          <div class="form-group">
+            <label class="form-label" for="form-notes">Keterangan Khusus</label>
+            <input type="text" id="form-notes" class="form-input">
+          </div>
+
+          <!-- Tagihan -->
+          <div class="form-group">
+            <label class="form-label" for="form-tagihan">Tagihan (Rp)</label>
+            <input type="number" id="form-tagihan" class="form-input" required>
+          </div>
+
+
+
+          <!-- Status Pembayaran -->
+          <div class="form-group">
+            <label class="form-label" for="form-status">Status Pembayaran</label>
+            <select id="form-status" class="form-input" required>
+              <option value="BELUM LUNAS">BELUM LUNAS</option>
+              <option value="LUNAS">LUNAS</option>
+            </select>
+          </div>
+
+          <!-- Tanggal Pembayaran -->
+          <div class="form-group">
+            <label class="form-label" for="form-date">Tanggal Bayar</label>
+            <input type="text" id="form-date" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="cancel-modal-btn" class="btn">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Pesanan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Toast Notification Container -->
+  <div id="toast" class="toast">
+    <!-- Inserted dynamically via JS -->
+  </div>
+
+  <!-- Footer -->
+  <footer style="text-align: center; padding: 24px 16px; color: var(--text-muted); font-size: 0.9rem; width: 100%;">
+    <p style="margin: 0;">Dikembangkan oleh <strong>Tim IT GMFC</strong> &copy; 2026</p>
+  </footer>
+
+  <!-- Data Script -->
+  <script src="data.js?v=3"></script>
+  <script src="index.js?v=4"></script>
+</body>
+</html>
