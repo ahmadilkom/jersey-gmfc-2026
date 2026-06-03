@@ -972,21 +972,12 @@ td.size-column {
 /* Admin Mode Buttons & Modal Styles */
 @media (max-width: 600px) {
   /* Hide less important columns on narrow screens */
-  #orders-table th:nth-child(8),
-  #orders-table td:nth-child(8),
-  #orders-table th:nth-child(9),
-  #orders-table td:nth-child(9),
-  #orders-table th:nth-child(10),
-  #orders-table td:nth-child(10),
+  /* Hide only the actions column on very small screens */
   #orders-table th:nth-child(11),
   #orders-table td:nth-child(11) {
     display: none;
   }
-  /* Reduce padding and font size */
-  #orders-table th, #orders-table td {
-    padding: 6px 8px;
-    font-size: 0.75rem;
-  }
+  #orders-table { min-width: 900px; }
 }
 
 .btn-admin {
