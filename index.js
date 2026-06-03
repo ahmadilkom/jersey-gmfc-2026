@@ -2,9 +2,9 @@
 // GMFC Jersey 2026 — Dashboard Application Logic
 // ============================================================
 
-// Seed data embedded directly to avoid cross-script loading issues
-const SEED_DATA = typeof jerseyOrdersData !== 'undefined' ? jerseyOrdersData : [];
-
+const SUPABASE_URL = 'https://dmukndauceqlpxwqxztd.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ZuDHnYR-xTAWnW7dOJqR5g_MSQCEJ_7';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let orders = [];
 let selectedOrderId = null;
@@ -103,47 +103,24 @@ const el = (id) => document.getElementById(id);
 
 // ── Data Persistence ────────────────────────────────────────
 
-const saveToLocalStorage = () => {
+const loadData = async () => {
   try {
-    localStorage.setItem('gmfc_jersey_orders', JSON.stringify(orders));
-  } catch (e) {
-    console.error('Gagal menyimpan ke localStorage:', e);
-  }
-};
-
-const loadData = () => {
-  try {
-    const raw = localStorage.getItem('gmfc_jersey_orders');
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        orders = parsed.map(o => {
-          if (o.hasSubsidy === undefined) {
-            const isAdult = o.category === "Dewasa / Umum";
-            const diff = (o.price || 0) - (o.paid || 0);
-            const isBob = o.id === 33;
-            o.hasSubsidy = isAdult && !isBob && (diff === 45000 || diff === 50000 || (o.paymentStatus === "" && diff > 0));
-          }
-          return o;
-        });
-        return;
+    const { data, error } = await supabase.from('orders').select('*').order('id', { ascending: true });
+    if (error) throw error;
+    orders = (data || []).map(o => {
+      if (o.hasSubsidy === undefined) {
+        const isAdult = o.category === "Dewasa / Umum";
+        const diff = (o.price || 0) - (o.paid || 0);
+        const isBob = o.id === 33;
+        o.hasSubsidy = isAdult && !isBob && (diff === 45000 || diff === 50000 || (o.paymentStatus === "" && diff > 0));
       }
-    }
+      return o;
+    });
+    renderApp();
   } catch (e) {
-    console.warn('localStorage korup, reset ke data awal.', e);
+    console.error('Gagal mengambil data dari Supabase:', e);
+    showToast('Gagal memuat data dari database.', 'error');
   }
-  // Fallback to seed data when no valid stored data
-  orders = SEED_DATA.map(o => {
-    const item = { ...o };
-    if (item.hasSubsidy === undefined) {
-      const isAdult = item.category === "Dewasa / Umum";
-      const diff = (item.price || 0) - (item.paid || 0);
-      const isBob = item.id === 33;
-      item.hasSubsidy = isAdult && !isBob && (diff === 45000 || diff === 50000 || (item.paymentStatus === "" && diff > 0));
-    }
-    return item;
-  });
-  saveToLocalStorage();
 };
 
 
@@ -323,18 +300,25 @@ window.editOrder = (id) => {
     pendingDeleteId = id;
     el('confirm-delete-overlay').classList.add('active');
   };
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (pendingDeleteId === null) return;
-    const idx = orders.findIndex((o) => o.id === pendingDeleteId);
-    if (idx !== -1) {
-      orders.splice(idx, 1);
-      if (selectedOrderId === pendingDeleteId) {
-        selectedOrderId = orders.length > 0 ? orders[0].id : null;
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', pendingDeleteId);
+      if (error) throw error;
+      
+      const idx = orders.findIndex((o) => o.id === pendingDeleteId);
+      if (idx !== -1) {
+        orders.splice(idx, 1);
+        if (selectedOrderId === pendingDeleteId) {
+          selectedOrderId = orders.length > 0 ? orders[0].id : null;
+        }
+        resetFilters();
+        showToast('Pemesanan berhasil dihapus.', 'info');
+        renderApp();
       }
-      saveToLocalStorage();
-      resetFilters(); // Reset category and status filters to show all after deletion
-      showToast('Pemesanan berhasil dihapus.', 'info');
-      renderApp();
+    } catch (e) {
+      console.error('Gagal menghapus data:', e);
+      showToast('Gagal menghapus data.', 'error');
     }
     pendingDeleteId = null;
     el('confirm-delete-overlay').classList.remove('active');
@@ -434,8 +418,11 @@ const setupEventListeners = () => {
   // Form submit
   const form = el('order-form');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
+      const submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
       const idVal = el('order-id-input').value;
       const data = {
         category:      el('form-category').value,
@@ -451,19 +438,31 @@ const setupEventListeners = () => {
         paymentDate:   el('form-date').value.trim(),
       };
 
-      if (idVal) {
-        const idx = orders.findIndex((o) => o.id === parseInt(idVal));
-        if (idx !== -1) { orders[idx] = { ...orders[idx], ...data }; }
-        showToast('Pesanan berhasil diperbarui!', 'success');
-      } else {
-        data.id = orders.length > 0 ? Math.max(...orders.map((o) => o.id)) + 1 : 1;
-        orders.push(data);
-        showToast('Pesanan baru berhasil ditambahkan!', 'success');
+      try {
+        if (idVal) {
+          const { error } = await supabase.from('orders').update(data).eq('id', parseInt(idVal));
+          if (error) throw error;
+          
+          const idx = orders.findIndex((o) => o.id === parseInt(idVal));
+          if (idx !== -1) { orders[idx] = { ...orders[idx], ...data }; }
+          showToast('Pesanan berhasil diperbarui!', 'success');
+        } else {
+          const { data: insertedData, error } = await supabase.from('orders').insert([data]).select();
+          if (error) throw error;
+          
+          if (insertedData && insertedData.length > 0) {
+            orders.push(insertedData[0]);
+          }
+          showToast('Pesanan baru berhasil ditambahkan!', 'success');
+        }
+        closeModal();
+        renderApp();
+      } catch (e) {
+        console.error('Gagal menyimpan pesanan:', e);
+        showToast('Gagal menyimpan pesanan.', 'error');
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
-
-      saveToLocalStorage();
-      closeModal();
-      renderApp();
     });
   }
 
@@ -525,11 +524,11 @@ const setupEventListeners = () => {
 
 // ── Init ─────────────────────────────────────────────────────
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   if (sessionStorage.getItem('gmfc_admin') === '1') {
     isAdmin = true;
   }
-  loadData();
+  await loadData();
   setupEventListeners();
   applyAdminUI();
 });
