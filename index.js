@@ -427,15 +427,20 @@ const setupEventListeners = () => {
 
     // Attempt to play on load
     playMusic();
+    window.addEventListener('load', playMusic);
 
     // Listen for any interaction to play if blocked
     const startMusicInteraction = () => {
       playMusic();
       document.removeEventListener('click', startMusicInteraction);
       document.removeEventListener('keydown', startMusicInteraction);
+      document.removeEventListener('scroll', startMusicInteraction);
+      document.removeEventListener('touchstart', startMusicInteraction);
     };
     document.addEventListener('click', startMusicInteraction);
     document.addEventListener('keydown', startMusicInteraction);
+    document.addEventListener('scroll', startMusicInteraction);
+    document.addEventListener('touchstart', startMusicInteraction);
 
     musicBtn.addEventListener('click', (e) => {
       e.stopPropagation(); // Prevent triggering the global listener
