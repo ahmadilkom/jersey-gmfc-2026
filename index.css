@@ -971,12 +971,6 @@ td.size-column {
 
 /* Admin Mode Buttons & Modal Styles */
 @media (max-width: 600px) {
-  /* Hide less important columns on narrow screens */
-  /* Hide only the actions column on very small screens */
-  #orders-table th:nth-child(11),
-  #orders-table td:nth-child(11) {
-    display: none;
-  }
   #orders-table { min-width: 900px; }
 }
 
