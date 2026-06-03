@@ -408,13 +408,17 @@ const setupEventListeners = () => {
   if (musicBtn && bgMusic) {
     // Set initial volume low so it's not jarring
     bgMusic.volume = 0.3;
-    const playIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>';
-    const pauseIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    const volumeOffIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+    const volumeOnIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>';
+    
+    // Set default icon (assuming it's paused initially before interaction)
+    musicBtn.innerHTML = volumeOffIcon;
+
     const playMusic = async () => {
       if (isPlaying) return;
       try {
         await bgMusic.play();
-        musicBtn.innerHTML = pauseIcon;
+        musicBtn.innerHTML = volumeOnIcon;
         isPlaying = true;
       } catch (e) {
         console.warn("Autoplay blocked by browser. Waiting for interaction...");
@@ -437,10 +441,10 @@ const setupEventListeners = () => {
       e.stopPropagation(); // Prevent triggering the global listener
       if (isPlaying) {
         bgMusic.pause();
-        musicBtn.innerHTML = playIcon;
+        musicBtn.innerHTML = volumeOffIcon;
       } else {
         bgMusic.play().catch(err => console.error("Audio play failed:", err));
-        musicBtn.innerHTML = pauseIcon;
+        musicBtn.innerHTML = volumeOnIcon;
       }
       isPlaying = !isPlaying;
     });
