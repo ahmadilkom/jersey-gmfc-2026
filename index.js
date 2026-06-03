@@ -4,8 +4,35 @@
 
 const SUPABASE_URL = 'https://dmukndauceqlpxwqxztd.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_ZuDHnYR-xTAWnW7dOJqR5g_MSQCEJ_7';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+console.log('Supabase client initialized', supabase);
+
+// ---- Debug helper: direct fetch with API key ----
+async function testSupabaseFetch() {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Accept: 'application/json',
+        Prefer: 'count=exact',
+      },
+    });
+    const data = await resp.json();
+    console.log('testSupabaseFetch response', data);
+    if (!resp.ok) {
+      console.error('Fetch error status', resp.status, resp.statusText);
+    }
+  } catch (e) {
+    console.error('testSupabaseFetch exception', e);
+  }
+}
+
+// Call the test on load (you can comment out later)
+window.addEventListener('load', () => {
+  testSupabaseFetch();
+});
 let orders = [];
 let selectedOrderId = null;
 let isAdmin = false;
@@ -14,12 +41,12 @@ const ADMIN_PASSWORD = 'JerseyGMFC2026';
 // ── Admin Auth ───────────────────────────────────────────────
 
 const applyAdminUI = () => {
-  const addBtn    = el('open-modal-btn');
-  const loginBtn  = el('admin-login-btn');
+  const addBtn = el('open-modal-btn');
+  const loginBtn = el('admin-login-btn');
   const logoutBtn = el('admin-logout-btn');
-  if (addBtn)    addBtn.style.display    = isAdmin ? 'flex'   : 'none';
-  if (loginBtn)  loginBtn.style.display  = isAdmin ? 'none'   : 'flex';
-  if (logoutBtn) logoutBtn.style.display = isAdmin ? 'flex'   : 'none';
+  if (addBtn) addBtn.style.display = isAdmin ? 'flex' : 'none';
+  if (loginBtn) loginBtn.style.display = isAdmin ? 'none' : 'flex';
+  if (logoutBtn) logoutBtn.style.display = isAdmin ? 'flex' : 'none';
   // Re-render table to show/hide Edit/Delete columns
   renderApp();
 };
@@ -104,9 +131,23 @@ const el = (id) => document.getElementById(id);
 // ── Data Persistence ────────────────────────────────────────
 
 const loadData = async () => {
+  console.log('Attempting to load orders via direct fetch');
   try {
-    const { data, error } = await supabase.from('orders').select('*').order('id', { ascending: true });
-    if (error) throw error;
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/orders?select=*&order=id.asc`, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        Accept: 'application/json',
+        Prefer: 'count=exact',
+      },
+    });
+    if (!resp.ok) {
+      console.error('Fetch error', resp.status, resp.statusText);
+      showToast('Gagal memuat data dari database.', 'error');
+      return;
+    }
+    const data = await resp.json();
+    console.log('Fetched orders', data);
     orders = (data || []).map(o => {
       if (o.hasSubsidy === undefined) {
         const isAdult = o.category === "Dewasa / Umum";
@@ -118,7 +159,7 @@ const loadData = async () => {
     });
     renderApp();
   } catch (e) {
-    console.error('Gagal mengambil data dari Supabase:', e);
+    console.error('Exception during fetch', e);
     showToast('Gagal memuat data dari database.', 'error');
   }
 };
@@ -294,39 +335,39 @@ window.editOrder = (id) => {
   el('modal-overlay').classList.add('active');
 };
 
-  // Delete with confirmation modal
-  let pendingDeleteId = null;
-  window.deleteOrder = (id) => {
-    pendingDeleteId = id;
-    el('confirm-delete-overlay').classList.add('active');
-  };
-  const confirmDelete = async () => {
-    if (pendingDeleteId === null) return;
-    try {
-      const { error } = await supabase.from('orders').delete().eq('id', pendingDeleteId);
-      if (error) throw error;
-      
-      const idx = orders.findIndex((o) => o.id === pendingDeleteId);
-      if (idx !== -1) {
-        orders.splice(idx, 1);
-        if (selectedOrderId === pendingDeleteId) {
-          selectedOrderId = orders.length > 0 ? orders[0].id : null;
-        }
-        resetFilters();
-        showToast('Pemesanan berhasil dihapus.', 'info');
-        renderApp();
+// Delete with confirmation modal
+let pendingDeleteId = null;
+window.deleteOrder = (id) => {
+  pendingDeleteId = id;
+  el('confirm-delete-overlay').classList.add('active');
+};
+const confirmDelete = async () => {
+  if (pendingDeleteId === null) return;
+  try {
+    const { error } = await supabase.from('orders').delete().eq('id', pendingDeleteId);
+    if (error) throw error;
+
+    const idx = orders.findIndex((o) => o.id === pendingDeleteId);
+    if (idx !== -1) {
+      orders.splice(idx, 1);
+      if (selectedOrderId === pendingDeleteId) {
+        selectedOrderId = orders.length > 0 ? orders[0].id : null;
       }
-    } catch (e) {
-      console.error('Gagal menghapus data:', e);
-      showToast('Gagal menghapus data.', 'error');
+      resetFilters();
+      showToast('Pemesanan berhasil dihapus.', 'info');
+      renderApp();
     }
-    pendingDeleteId = null;
-    el('confirm-delete-overlay').classList.remove('active');
-  };
-  const cancelDelete = () => {
-    pendingDeleteId = null;
-    el('confirm-delete-overlay').classList.remove('active');
-  };
+  } catch (e) {
+    console.error('Gagal menghapus data:', e);
+    showToast('Gagal menghapus data.', 'error');
+  }
+  pendingDeleteId = null;
+  el('confirm-delete-overlay').classList.remove('active');
+};
+const cancelDelete = () => {
+  pendingDeleteId = null;
+  el('confirm-delete-overlay').classList.remove('active');
+};
 
 // ── Modal ───────────────────────────────────────────────────
 
@@ -364,7 +405,7 @@ const setupEventListeners = () => {
   const themeBtn = el('theme-toggle-btn');
   if (themeBtn) {
     const moonIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6.8 6.8 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
-    const sunIcon  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.34-7.07-1.41 1.41M5.34 18.66l-1.41 1.41"/></svg>';
+    const sunIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.07 1.41 1.41M18.66 18.66l1.41 1.41M2 12h2M20 12h2m-4.34-7.07-1.41 1.41M5.34 18.66l-1.41 1.41"/></svg>';
 
     themeBtn.addEventListener('click', () => {
       const cur = document.body.getAttribute('data-theme');
@@ -425,31 +466,31 @@ const setupEventListeners = () => {
 
       const idVal = el('order-id-input').value;
       const data = {
-        category:      el('form-category').value,
-        name:          el('form-name').value.toUpperCase().trim(),
-        number:        el('form-number').value.trim(),
-        size:          el('form-size').value.trim(),
-        notes:         el('form-notes').value.trim(),
-        customer:      el('form-customer').value.toUpperCase().trim(),
-        price:         parseInt(el('form-tagihan').value) || 0,
-        paid:          0,
-        hasSubsidy:    false,
+        category: el('form-category').value,
+        name: el('form-name').value.toUpperCase().trim(),
+        number: el('form-number').value.trim(),
+        size: el('form-size').value.trim(),
+        notes: el('form-notes').value.trim(),
+        customer: el('form-customer').value.toUpperCase().trim(),
+        price: parseInt(el('form-tagihan').value) || 0,
+        paid: 0,
+        hasSubsidy: false,
         paymentStatus: el('form-status').value.trim(),
-        paymentDate:   el('form-date').value.trim(),
+        paymentDate: el('form-date').value.trim(),
       };
 
       try {
         if (idVal) {
           const { error } = await supabase.from('orders').update(data).eq('id', parseInt(idVal));
           if (error) throw error;
-          
+
           const idx = orders.findIndex((o) => o.id === parseInt(idVal));
           if (idx !== -1) { orders[idx] = { ...orders[idx], ...data }; }
           showToast('Pesanan berhasil diperbarui!', 'success');
         } else {
           const { data: insertedData, error } = await supabase.from('orders').insert([data]).select();
           if (error) throw error;
-          
+
           if (insertedData && insertedData.length > 0) {
             orders.push(insertedData[0]);
           }
