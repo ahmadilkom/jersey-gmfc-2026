@@ -527,6 +527,7 @@ const setupEventListeners = () => {
         customer: el('form-customer').value.toUpperCase().trim(),
         price: parseInt(el('form-tagihan').value) || 0,
         paid: 0,
+        hasSubsidy: false,
         paymentStatus: el('form-status').value.trim(),
         paymentDate: el('form-date').value.trim(),
       };
