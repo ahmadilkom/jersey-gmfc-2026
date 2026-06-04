@@ -527,7 +527,6 @@ const setupEventListeners = () => {
         customer: el('form-customer').value.toUpperCase().trim(),
         price: parseInt(el('form-tagihan').value) || 0,
         paid: 0,
-        hasSubsidy: false,
         paymentStatus: el('form-status').value.trim(),
         paymentDate: el('form-date').value.trim(),
       };
@@ -537,20 +536,15 @@ const setupEventListeners = () => {
           const { error } = await supabaseClient.from('orders').update(data).eq('id', parseInt(idVal));
           if (error) throw error;
 
-          const idx = orders.findIndex((o) => o.id === parseInt(idVal));
-          if (idx !== -1) { orders[idx] = { ...orders[idx], ...data }; }
           showToast('Pesanan berhasil diperbarui!', 'success');
         } else {
-          const { data: insertedData, error } = await supabaseClient.from('orders').insert([data]).select();
+          const { error } = await supabaseClient.from('orders').insert([data]);
           if (error) throw error;
 
-          if (insertedData && insertedData.length > 0) {
-            orders.push(insertedData[0]);
-          }
           showToast('Pesanan baru berhasil ditambahkan!', 'success');
         }
         closeModal();
-        renderApp();
+        await loadData();
       } catch (e) {
         console.error('Gagal menyimpan pesanan:', e);
         showToast('Gagal menyimpan pesanan.', 'error');
