@@ -538,6 +538,8 @@ const setupEventListeners = () => {
 
           showToast('Pesanan berhasil diperbarui!', 'success');
         } else {
+          const maxId = orders.length > 0 ? Math.max(...orders.map(o => o.id)) : 0;
+          data.id = maxId + 1;
           const { error } = await supabaseClient.from('orders').insert([data]);
           if (error) throw error;
 
